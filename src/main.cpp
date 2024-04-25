@@ -3,7 +3,7 @@
 #include <WiFiClientSecure.h>
 
 const char* ssid = "MEGACABLE-2.4G-2EA4_Plus";
-const char* password = "5S67CnMRva";
+const char* password = "";
 
 const char* mqtt_server = "1ef84d7190794d81ade79467c7c158a5.s1.eu.hivemq.cloud";
 const int mqtt_port = 8883;
