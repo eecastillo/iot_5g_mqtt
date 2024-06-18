@@ -39,7 +39,7 @@ const char gprsUser[] = "webgprs"; // User
 const char gprsPass[] = "webgprs2002"; // Password
 const char simPIN[]   = ""; // SIM card PIN code, if any
 
-TinyGsmClient client(modem);
+TinyGsmClientSecure client(modem);
 PubSubClient mqtt(client);
 const int  port = 80;
 
@@ -54,21 +54,21 @@ const char* user_hive   = "prueba";
 const char* password_hive   = "prueba123";
 const int port_hive = 8883;
 
-const char* topicText = "ie714410/feeds/texto";
-const char* topicGas = "ie714410/feeds/nivel_gas";
+const char* topicGas_hive = "nivel_gas";
+const char* topicGas_adafruit = "ie714410/feeds/nivel_gas";
 
 bool g_energy = false;
 float battery_level;
 
 boolean mqttConnect() {
   SerialMon.print("Connecting to ");
-  SerialMon.print(broker_adafruit);
+  SerialMon.print(broker_hive);
 
   // Connect to MQTT Broker
   //boolean status = mqtt.connect("GsmClientTest");
 
   // Or, if you want to authenticate MQTT:
-  boolean status = mqtt.connect("GsmClientTest", user_adafruit, password_adafruit);
+  boolean status = mqtt.connect("GsmClientTest", user_hive, password_hive);
 
   if (status == false) {
     SerialMon.println(" fail");
@@ -107,13 +107,13 @@ void setupModem()
 void MQTTT()
 {   
     // MQTT Broker setup
-    mqtt.setServer(broker_adafruit, port_adafruit);
+    mqtt.setServer(broker_hive, port_hive);
     delay(1000); // delay provicional
 
     while (!mqtt.connected()) {
         SerialMon.println("=== MQTT NOT CONNECTED ===");   
         if (mqttConnect()) {
-            mqtt.publish(topicGas, "35");
+            mqtt.publish(topicGas_hive, "35");
         }
         else
         {
