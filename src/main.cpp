@@ -34,6 +34,31 @@ const char *register_info[] = {
     "Registered, roaming.",
 };
 
+const char *rootCA = "-----BEGIN CERTIFICATE-----\n\
+MIIEAzCCAuugAwIBAgIUBY1hlCGvdj4NhBXkZ/uLUZNILAwwDQYJKoZIhvcNAQEL\n\
+BQAwgZAxCzAJBgNVBAYTAkdCMRcwFQYDVQQIDA5Vbml0ZWQgS2luZ2RvbTEOMAwG\n\
+A1UEBwwFRGVyYnkxEjAQBgNVBAoMCU1vc3F1aXR0bzELMAkGA1UECwwCQ0ExFjAU\n\
+BgNVBAMMDW1vc3F1aXR0by5vcmcxHzAdBgkqhkiG9w0BCQEWEHJvZ2VyQGF0Y2hv\n\
+by5vcmcwHhcNMjAwNjA5MTEwNjM5WhcNMzAwNjA3MTEwNjM5WjCBkDELMAkGA1UE\n\
+BhMCR0IxFzAVBgNVBAgMDlVuaXRlZCBLaW5nZG9tMQ4wDAYDVQQHDAVEZXJieTES\n\
+MBAGA1UECgwJTW9zcXVpdHRvMQswCQYDVQQLDAJDQTEWMBQGA1UEAwwNbW9zcXVp\n\
+dHRvLm9yZzEfMB0GCSqGSIb3DQEJARYQcm9nZXJAYXRjaG9vLm9yZzCCASIwDQYJ\n\
+KoZIhvcNAQEBBQADggEPADCCAQoCggEBAME0HKmIzfTOwkKLT3THHe+ObdizamPg\n\
+UZmD64Tf3zJdNeYGYn4CEXbyP6fy3tWc8S2boW6dzrH8SdFf9uo320GJA9B7U1FW\n\
+Te3xda/Lm3JFfaHjkWw7jBwcauQZjpGINHapHRlpiCZsquAthOgxW9SgDgYlGzEA\n\
+s06pkEFiMw+qDfLo/sxFKB6vQlFekMeCymjLCbNwPJyqyhFmPWwio/PDMruBTzPH\n\
+3cioBnrJWKXc3OjXdLGFJOfj7pP0j/dr2LH72eSvv3PQQFl90CZPFhrCUcRHSSxo\n\
+E6yjGOdnz7f6PveLIB574kQORwt8ePn0yidrTC1ictikED3nHYhMUOUCAwEAAaNT\n\
+MFEwHQYDVR0OBBYEFPVV6xBUFPiGKDyo5V3+Hbh4N9YSMB8GA1UdIwQYMBaAFPVV\n\
+6xBUFPiGKDyo5V3+Hbh4N9YSMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL\n\
+BQADggEBAGa9kS21N70ThM6/Hj9D7mbVxKLBjVWe2TPsGfbl3rEDfZ+OKRZ2j6AC\n\
+6r7jb4TZO3dzF2p6dgbrlU71Y/4K0TdzIjRj3cQ3KSm41JvUQ0hZ/c04iGDg/xWf\n\
++pp58nfPAYwuerruPNWmlStWAXf0UTqRtg4hQDWBuUFDJTuWuuBvEXudz74eh/wK\n\
+sMwfu1HFvjy5Z0iMDU8PUDepjVolOCue9ashlS4EB5IECdSR2TItnAIiIwimx839\n\
+LdUdRudafMu5T5Xma182OC0/u/xRlEm+tvKGGmfFcN0piqVl8OrSPBgIlb+1IKJE\n\
+m/XriWr/Cq4h/JfB7NTsezVslgkBaoU=\n\
+-----END CERTIFICATE-----\n";
+
 enum {
     MODEM_CATM = 1,
     MODEM_NB_IOT,
@@ -44,13 +69,13 @@ enum {
 #define randMin 18
 
 // Your GPRS credentials, if any
-const char apn[] = "internet.itelcel.com";
-const char gprsUser[] = "webgprs"; // User
-const char gprsPass[] = "webgprs2002"; // Password
+const char apn[] = "emnify";
+const char gprsUser[] = "";//"webgprs"; // User
+const char gprsPass[] = "";//"webgprs2002"; // Password
 
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
-const int  port       = 1883;
+const int  port       = 8883;
 char buffer[1024] = {0};
 
 // To create a device : https://cayenne.mydevices.com/cayenne/dashboard
@@ -84,6 +109,64 @@ bool isConnect()
     return false;
 }
 
+
+void writeCaFiles(int index, const char *filename, const char *data,
+                  size_t lenght)
+{
+    modem.sendAT("+CFSTERM");
+    modem.waitResponse();
+
+
+    modem.sendAT("+CFSINIT");
+    if (modem.waitResponse() != 1) {
+        Serial.println("INITFS FAILED");
+        return;
+    }
+    // AT+CFSWFILE=<index>,<filename>,<mode>,<filesize>,<input time>
+    // <index>
+    //      Directory of AP filesystem:
+    //      0 "/custapp/" 1 "/fota/" 2 "/datatx/" 3 "/customer/"
+    // <mode>
+    //      0 If the file already existed, write the data at the beginning of the
+    //      file. 1 If the file already existed, add the data at the end o
+    // <file size>
+    //      File size should be less than 10240 bytes. <input time> Millisecond,
+    //      should send file during this period or you can’t send file when
+    //      timeout. The value should be less
+    // <input time> Millisecond, should send file during this period or you can’t
+    // send file when timeout. The value should be less than 10000 ms.
+
+    size_t payloadLenght = lenght;
+    size_t totalSize     = payloadLenght;
+    size_t alardyWrite   = 0;
+
+    while (totalSize > 0) {
+        size_t writeSize = totalSize > 10000 ? 10000 : totalSize;
+
+        modem.sendAT("+CFSWFILE=", index, ",", "\"", filename, "\"", ",",
+                     !(totalSize == payloadLenght), ",", writeSize, ",", 10000);
+        modem.waitResponse(30000UL, "DOWNLOAD");
+REWRITE:
+        modem.stream.write(data + alardyWrite, writeSize);
+        if (modem.waitResponse(30000UL) == 1) {
+            alardyWrite += writeSize;
+            totalSize -= writeSize;
+            Serial.printf("Writing:%d overage:%d\n", writeSize, totalSize);
+        } else {
+            Serial.println("Write failed!");
+            delay(1000);
+            goto REWRITE;
+        }
+    }
+
+    Serial.println("Wirte done!!!");
+
+    modem.sendAT("+CFSTERM");
+    if (modem.waitResponse() != 1) {
+        Serial.println("CFSTERM FAILED");
+        return;
+    }
+}
 
 void setup()
 {
@@ -176,10 +259,27 @@ void setup()
     /*********************************
     * step 5 : Wait for the network registration to succeed
     ***********************************/
+   //check with and without this
+    modem.sendAT("+CNCFG=0,1,\"emnify\"");
+    if (modem.waitResponse() != 1) {
+        Serial.println("Set operators apn Failed!");
+        return;
+    }
+    modem.sendAT("+CNACT=0,1");
+    if (modem.waitResponse() != 1) {
+        Serial.println("Set operators cnact Failed!");
+        return;
+    }
+    modem.sendAT("+CAOPEN=0,0,\"TCP\",\"10.189.169.49\",443");
+    if (modem.waitResponse() != 1) {
+        Serial.println("Set operators caopen Failed!");
+        return;
+    }
     SIM70xxRegStatus s;
     do {
         s = modem.getRegistrationStatus();
         if (s != REG_OK_HOME && s != REG_OK_ROAMING) {
+            Serial.printf("Response: %u", s);
             Serial.print(".");
             delay(1000);
         }
@@ -196,17 +296,28 @@ void setup()
     bool res = modem.isGprsConnected();
     if (!res) {
         modem.sendAT("+CNACT=0,1");
-        if (modem.waitResponse() != 1) {
-            Serial.println("Activate network bearer Failed!");
-            return;
-        }
-        // if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-        //     return ;
-        // }
+        //if (modem.waitResponse() != 1) {
+        //    Serial.println("Activate network bearer Failed!");
+         //   return;
+        //}
+         if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+             return ;
+         }
     }
 
     Serial.print("GPRS status:");
     Serial.println(res ? "connected" : "not connected");
+
+
+    // Before connecting, you need to confirm that the time has been synchronized.
+    modem.sendAT("+CCLK?");
+    modem.waitResponse(30000);
+
+
+    /*********************************
+     * step 6 : import  ca
+     ***********************************/
+    writeCaFiles(3, "server-ca.crt", rootCA, strlen(rootCA));
 
     /*********************************
     * step 6 : setup MQTT Client
@@ -266,7 +377,7 @@ void loop()
 
     Serial.println();
     // Publish fake temperature data
-    String payload = "42\r\n";//"temp,c=";
+    String payload = "45\r\n";//"temp,c=";
     //int temp =  rand() % (randMax - randMin) + randMin;
     //payload.concat(temp);
     //payload.concat("\r\n");
