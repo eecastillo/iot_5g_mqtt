@@ -65,6 +65,8 @@ enum {
     MODEM_CATM_NBIOT,
 };
 
+const int AUTOMATIC_NETWORK = 2;
+
 #define randMax 35
 #define randMin 18
 
@@ -245,9 +247,9 @@ void setup()
      * step 4 : Set the network mode to NB-IOT
     ***********************************/
 
-    modem.setNetworkMode(2);    //use automatic
+    modem.setNetworkMode(AUTOMATIC_NETWORK);    //automatic detection AUTOMATIC_NETWORK=2
 
-    modem.setPreferredMode(MODEM_CATM);
+    modem.setPreferredMode(MODEM_CATM);       // NB_IOT(2) as preferred mode
 
     uint8_t pre = modem.getPreferredMode();
 
