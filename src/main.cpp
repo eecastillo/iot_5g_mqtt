@@ -366,6 +366,18 @@ void setup()
 
     Serial.println("MQTT Client connected!");
 
+// Subscribe to MQTT topic
+    /*
+        snprintf(buffer, 1024, "+SMSUB=\"ie714410/feeds/%s\",1", topic);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    Serial.print("MQTT Subscribe topic : ");
+    Serial.println(buffer);
+    */
+    
     // random seed data
     //randomSeed(esp_random());
 }
@@ -399,5 +411,54 @@ void loop()
         }
     }
 
+    //Check if subscription has messages
+    /*
+    if (modem.waitResponse("+SMSUB: ") == 1) {
+        String result =  modem.stream.readStringUntil('\r');
+        Serial.print("Recive payload:");
+        Serial.println(result);
+
+
+        int index = result.indexOf(",");
+        if (index < 0) {
+            Serial.println("index error !"); return;
+        }
+
+        result = result.substring(index + 1);
+        result.replace("\"", "");
+
+        //Get command value
+        char value = result[result.length() - 1];
+        //Get Sep
+        result = result.substring(0, result.length() - 2);
+
+        String payload = "ok,";
+        payload.concat(result);
+
+        if (value == '1') {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
+        } else {
+            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
+        }
+
+        // v1/username/things/clientID/response
+        snprintf(buffer, 1024, "+SMPUB=\"v1/%s/things/%s/response\",%d,1,1", username, clientID, payload.length());
+        modem.sendAT(buffer);
+        if (modem.waitResponse(">") == 1) {
+            modem.stream.write(payload.c_str(), payload.length());
+            Serial.print("Try publish payload: ");
+            Serial.println(payload);
+
+            if (modem.waitResponse(3000)) {
+                Serial.println("Send Packet success!");
+            } else {
+                Serial.println("Send Packet failed!");
+            }
+        }
+
+    }
+    */
+    
+    //Sleep and wakeup block
     delay(60000);
 }
