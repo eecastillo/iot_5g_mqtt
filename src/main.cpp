@@ -367,7 +367,7 @@ void setup()
     Serial.println("MQTT Client connected!");
 
     // random seed data
-    randomSeed(esp_random());
+    //randomSeed(esp_random());
 }
 
 void loop()
