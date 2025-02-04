@@ -389,15 +389,9 @@ void loop()
         return ;
     }
 
-    Serial.println();
-    // Publish fake temperature data
-    String payload = "45\r\n";//"temp,c=";
-    //int temp =  rand() % (randMax - randMin) + randMin;
-    //payload.concat(temp);
-    //payload.concat("\r\n");
-
-    // AT+SMPUB=<topic>,<content length>,<qos>,<retain><CR>message is enteredQuit edit mode if messagelength equals to <contentlength>
-    snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/nivel_gas\",%d,1,1", payload.length());
+    sensedValue = analogRead(sensorPin);
+    String payload = strcat(str(sensedValue), "\r\n");
+    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1",user, topic, payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
