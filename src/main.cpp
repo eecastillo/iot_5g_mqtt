@@ -11,6 +11,14 @@
 #include "XPowersLib.h"
 #include "utilities.h"
 
+
+//Pitches for buzzer implementation
+#include "pitches.h" 
+#define BUZZER_PIN 18
+int melody[] = {
+  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
+};
+
 XPowersPMU  PMU;
 
 // See all AT commands, if wanted
@@ -101,7 +109,7 @@ char clientID[] = "ESP32";
 int data_channel = 0;
 
 int calculated_moisture, sensed_moisture;
-const int moisture_sensor_pin = A0;
+#define moisture_sensor_pin = A0;
 
 bool isConnect()
 {
@@ -435,6 +443,10 @@ void loop()
 
         if (value == '1') {
             PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
+            
+            tone(BUZZZER_PIN, NOTE_C4, 1000);
+            delay(1000);
+            noTone(BUZZZER_PIN);
         } else {
             PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
         }
