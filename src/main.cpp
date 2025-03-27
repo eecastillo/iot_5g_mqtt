@@ -100,6 +100,8 @@ char clientID[] = "ESP32";
 //  8. Add Widget
 int data_channel = 0;
 
+int calculated_moisture, sensed_moisture;
+const int moisture_sensor_pin = A0;
 
 bool isConnect()
 {
@@ -388,10 +390,11 @@ void loop()
         Serial.println("MQTT Client disconnect!"); delay(1000);
         return ;
     }
-
-    sensedValue = analogRead(sensorPin);
-    String payload = strcat(str(sensedValue), "\r\n");
-    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1",user, topic, payload.length());
+    
+    sensed_moisture = analogRead(moisture_sensor_pin);
+    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
+    String payload = strcat(str(calculated_moisture), "\r\n");
+    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1", user, topic, payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
@@ -404,6 +407,7 @@ void loop()
             Serial.println("Send Packet failed!");
         }
     }
+    Serial.println(strcat("Moisture level: ",str(sensed_moisture),"%"));
 
     //Check if subscription has messages
     /*
