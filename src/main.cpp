@@ -79,9 +79,9 @@ const int AUTOMATIC_NETWORK = 2;
 #define randMin 18
 
 // Your GPRS credentials, if any
-const char apn[] = "emnify";
-const char gprsUser[] = "";//"webgprs"; // User
-const char gprsPass[] = "";//"webgprs2002"; // Password
+const char apn[] = "internet.itelcel.com";//"emnify";
+const char gprsUser[] = "webgprs";//""; // User
+const char gprsPass[] = "webgprs2002";//""; // Password
 
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
@@ -96,7 +96,8 @@ char buffer[1024] = {0};
 char username[] = "ie714410";
 char password[] = "aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
-
+char topic_nivel_gas[] = "nivel_gas";
+char topic_soil_humidity[] = "soil_humidity"
 // To create a widget
 //  1. Add new...
 //  2. Device/Widget
@@ -109,7 +110,7 @@ char clientID[] = "ESP32";
 int data_channel = 0;
 
 int calculated_moisture, sensed_moisture;
-#define moisture_sensor_pin = A0;
+int moisture_sensor_pin = 34;
 
 bool isConnect()
 {
@@ -272,7 +273,8 @@ void setup()
     * step 5 : Wait for the network registration to succeed
     ***********************************/
    //check with and without this
-    modem.sendAT("+CNCFG=0,1,\"emnify\"");
+   /* 
+   modem.sendAT("+CNCFG=0,1,\"emnify\"");
     if (modem.waitResponse() != 1) {
         Serial.println("Set operators apn Failed!");
         return;
@@ -286,7 +288,7 @@ void setup()
     if (modem.waitResponse() != 1) {
         Serial.println("Set operators caopen Failed!");
         return;
-    }
+    }*/
     SIM70xxRegStatus s;
     do {
         s = modem.getRegistrationStatus();
@@ -401,8 +403,8 @@ void loop()
     
     sensed_moisture = analogRead(moisture_sensor_pin);
     calculated_moisture = (100 - ((sensed_moisture/4095)*100));
-    String payload = strcat(str(calculated_moisture), "\r\n");
-    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1", user, topic, payload.length());
+    String payload = String(calculated_moisture)+ "\r\n";
+    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1", username, topic_soil_humidity, payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
@@ -415,7 +417,7 @@ void loop()
             Serial.println("Send Packet failed!");
         }
     }
-    Serial.println(strcat("Moisture level: ",str(sensed_moisture),"%"));
+    Serial.println("Moisture level: "+String(sensed_moisture)+"%");
 
     //Check if subscription has messages
     /*
