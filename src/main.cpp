@@ -97,7 +97,7 @@ char username[] = "ie714410";
 char password[] = "aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
 char topic_nivel_gas[] = "nivel_gas";
-char topic_soil_humidity[] = "soil_humidity"
+char topic_soil_humidity[] = "soil_humidity";
 // To create a widget
 //  1. Add new...
 //  2. Device/Widget
@@ -110,7 +110,7 @@ char topic_soil_humidity[] = "soil_humidity"
 int data_channel = 0;
 
 int calculated_moisture, sensed_moisture;
-int moisture_sensor_pin = 34;
+int moisture_sensor_pin = 1;
 
 bool isConnect()
 {
@@ -401,8 +401,8 @@ void loop()
         return ;
     }
     
-    sensed_moisture = analogRead(moisture_sensor_pin);
-    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
+   // sensed_moisture = analogRead(moisture_sensor_pin);
+    calculated_moisture = 8;//(100 - ((sensed_moisture/4095)*100));
     String payload = String(calculated_moisture)+ "\r\n";
     snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1", username, topic_soil_humidity, payload.length());
     modem.sendAT(buffer);
