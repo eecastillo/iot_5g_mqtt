@@ -50,7 +50,7 @@ const char gprsPass[] = "webgprs2002"; // Password
 
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
-const int  port       = 1883;
+const int  port       = 8883;
 char buffer[1024] = {0};
 
 // To create a device : https://cayenne.mydevices.com/cayenne/dashboard
@@ -59,7 +59,7 @@ char buffer[1024] = {0};
 //  3. Bring Your Own Thing
 //  4. Copy the <MQTT USERNAME> <MQTT PASSWORD> <CLIENT ID> field to the bottom for replacement
 char username[] = "ie714410";
-char password[] = "aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
+char password[] = "aio_vafN54v3bwagaaZcep05Dpns0erz";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
 
 // To create a widget
@@ -272,7 +272,7 @@ void loop()
     //payload.concat("\r\n");
 
     // AT+SMPUB=<topic>,<content length>,<qos>,<retain><CR>message is enteredQuit edit mode if messagelength equals to <contentlength>
-    snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/nivel_gas\",%d,1,1", payload.length());
+    snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/nivel-gas\",%d,1,1", payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
