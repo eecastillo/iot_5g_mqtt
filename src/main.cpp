@@ -59,7 +59,7 @@ char buffer[1024] = {0};
 //  3. Bring Your Own Thing
 //  4. Copy the <MQTT USERNAME> <MQTT PASSWORD> <CLIENT ID> field to the bottom for replacement
 char username[] = "ie714410";
-char password[] = "";
+char password[] = "aio_vafN54v3bwagaaZcep05Dpns0erz";
 char clientID[] = "ESP32";
 
 // To create a widget
