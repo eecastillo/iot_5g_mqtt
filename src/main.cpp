@@ -94,10 +94,10 @@ char buffer[1024] = {0};
 //  3. Bring Your Own Thing
 //  4. Copy the <MQTT USERNAME> <MQTT PASSWORD> <CLIENT ID> field to the bottom for replacement
 char username[] = "ie714410";
-char password[] = "aio_vafN54v3bwagaaZcep05Dpns0erz";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
+char password[] = "aio_YMqd77m5MZo3pofIwwTt43lUNkEY";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
-char topic_nivel_gas[] = "nivel_gas";
-char topic_soil_humidity[] = "soil_humidity";
+char topic_alarm[] = "set-alarm";
+char topic_soil_humidity[] = "soil-humidity";
 // To create a widget
 //  1. Add new...
 //  2. Device/Widget
@@ -179,6 +179,45 @@ REWRITE:
         Serial.println("CFSTERM FAILED");
         return;
     }
+}
+
+void connect_mqtt()
+{
+    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    int8_t ret;
+    do {
+
+        modem.sendAT("+SMCONN");
+        ret = modem.waitResponse(30000);
+        if (ret != 1) {
+            Serial.println("Connect failed, retry connect ..."); delay(1000);
+        }
+
+    } while (ret != 1);
+
+    Serial.println("MQTT Client connected!");
 }
 
 void setup()
@@ -331,7 +370,7 @@ void setup()
     /*********************************
      * step 6 : import  ca
      ***********************************/
-    writeCaFiles(3, "server-ca.crt", rootCA, strlen(rootCA));
+    //writeCaFiles(3, "server-ca.crt", rootCA, strlen(rootCA));
 
     /*********************************
     * step 6 : setup MQTT Client
@@ -342,54 +381,21 @@ void setup()
     modem.waitResponse();
 
 
-    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
+    connect_mqtt();
 
-    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
 
-    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    int8_t ret;
-    do {
-
-        modem.sendAT("+SMCONN");
-        ret = modem.waitResponse(30000);
-        if (ret != 1) {
-            Serial.println("Connect failed, retry connect ..."); delay(1000);
-        }
-
-    } while (ret != 1);
-
-    Serial.println("MQTT Client connected!");
-
+    modem.sendAT("+SMSUB=?");
+    Serial.println(modem.waitResponse(10000));
 // Subscribe to MQTT topic
-    /*
-        snprintf(buffer, 1024, "+SMSUB=\"ie714410/feeds/%s\",1", topic);
+    snprintf(buffer, 1024, "+SMSUB=\"%s/feeds/%s\",1", username, topic_alarm);
     modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
+    Serial.println(modem.waitResponse(10000));
+    //if (modem.waitResponse() != 1) {
+    //    return;
+    //}
 
     Serial.print("MQTT Subscribe topic : ");
-    Serial.println(buffer);
-    */
-    
+    Serial.println(buffer);    
     // random seed data
     //randomSeed(esp_random());
 }
@@ -398,13 +404,14 @@ void loop()
 {
     if (!isConnect()) {
         Serial.println("MQTT Client disconnect!"); delay(1000);
-        return ;
+        Serial.println("Connecting...");
+        connect_mqtt();
     }
     
-   // sensed_moisture = analogRead(moisture_sensor_pin);
-    calculated_moisture = 8;//(100 - ((sensed_moisture/4095)*100));
+    sensed_moisture = analogRead(moisture_sensor_pin);
+    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
     String payload = String(calculated_moisture)+ "\r\n";
-    snprintf(buffer, 1024, "+SMPUB=\"$s/feeds/$s\",%d,1,1", username, topic_soil_humidity, payload.length());
+    snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
@@ -417,10 +424,13 @@ void loop()
             Serial.println("Send Packet failed!");
         }
     }
-    Serial.println("Moisture level: "+String(sensed_moisture)+"%");
+    //Serial.println(buffer);
+    //Serial.println(payload);
+    Serial.println("Moisture level: "+String(calculated_moisture)+"%");
 
     //Check if subscription has messages
-    /*
+    Serial.println("Checking for messages:");
+    delay(2000);
     if (modem.waitResponse("+SMSUB: ") == 1) {
         String result =  modem.stream.readStringUntil('\r');
         Serial.print("Recive payload:");
@@ -446,13 +456,17 @@ void loop()
         if (value == '1') {
             PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
             
-            tone(BUZZZER_PIN, NOTE_C4, 1000);
-            delay(1000);
-            noTone(BUZZZER_PIN);
+          //  tone(BUZZZER_PIN, NOTE_C4, 1000);
+          //  delay(1000);
+          //  noTone(BUZZZER_PIN);
         } else {
             PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
         }
-
+    }else
+    {
+        Serial.println("subscription has no messages");
+    }
+/*
         // v1/username/things/clientID/response
         snprintf(buffer, 1024, "+SMPUB=\"v1/%s/things/%s/response\",%d,1,1", username, clientID, payload.length());
         modem.sendAT(buffer);
@@ -472,5 +486,5 @@ void loop()
     */
     
     //Sleep and wakeup block
-    delay(60000);
+    delay(6000);
 }
