@@ -42,31 +42,6 @@ const char *register_info[] = {
     "Registered, roaming.",
 };
 
-const char *rootCA = "-----BEGIN CERTIFICATE-----\n\
-MIIEAzCCAuugAwIBAgIUBY1hlCGvdj4NhBXkZ/uLUZNILAwwDQYJKoZIhvcNAQEL\n\
-BQAwgZAxCzAJBgNVBAYTAkdCMRcwFQYDVQQIDA5Vbml0ZWQgS2luZ2RvbTEOMAwG\n\
-A1UEBwwFRGVyYnkxEjAQBgNVBAoMCU1vc3F1aXR0bzELMAkGA1UECwwCQ0ExFjAU\n\
-BgNVBAMMDW1vc3F1aXR0by5vcmcxHzAdBgkqhkiG9w0BCQEWEHJvZ2VyQGF0Y2hv\n\
-by5vcmcwHhcNMjAwNjA5MTEwNjM5WhcNMzAwNjA3MTEwNjM5WjCBkDELMAkGA1UE\n\
-BhMCR0IxFzAVBgNVBAgMDlVuaXRlZCBLaW5nZG9tMQ4wDAYDVQQHDAVEZXJieTES\n\
-MBAGA1UECgwJTW9zcXVpdHRvMQswCQYDVQQLDAJDQTEWMBQGA1UEAwwNbW9zcXVp\n\
-dHRvLm9yZzEfMB0GCSqGSIb3DQEJARYQcm9nZXJAYXRjaG9vLm9yZzCCASIwDQYJ\n\
-KoZIhvcNAQEBBQADggEPADCCAQoCggEBAME0HKmIzfTOwkKLT3THHe+ObdizamPg\n\
-UZmD64Tf3zJdNeYGYn4CEXbyP6fy3tWc8S2boW6dzrH8SdFf9uo320GJA9B7U1FW\n\
-Te3xda/Lm3JFfaHjkWw7jBwcauQZjpGINHapHRlpiCZsquAthOgxW9SgDgYlGzEA\n\
-s06pkEFiMw+qDfLo/sxFKB6vQlFekMeCymjLCbNwPJyqyhFmPWwio/PDMruBTzPH\n\
-3cioBnrJWKXc3OjXdLGFJOfj7pP0j/dr2LH72eSvv3PQQFl90CZPFhrCUcRHSSxo\n\
-E6yjGOdnz7f6PveLIB574kQORwt8ePn0yidrTC1ictikED3nHYhMUOUCAwEAAaNT\n\
-MFEwHQYDVR0OBBYEFPVV6xBUFPiGKDyo5V3+Hbh4N9YSMB8GA1UdIwQYMBaAFPVV\n\
-6xBUFPiGKDyo5V3+Hbh4N9YSMA8GA1UdEwEB/wQFMAMBAf8wDQYJKoZIhvcNAQEL\n\
-BQADggEBAGa9kS21N70ThM6/Hj9D7mbVxKLBjVWe2TPsGfbl3rEDfZ+OKRZ2j6AC\n\
-6r7jb4TZO3dzF2p6dgbrlU71Y/4K0TdzIjRj3cQ3KSm41JvUQ0hZ/c04iGDg/xWf\n\
-+pp58nfPAYwuerruPNWmlStWAXf0UTqRtg4hQDWBuUFDJTuWuuBvEXudz74eh/wK\n\
-sMwfu1HFvjy5Z0iMDU8PUDepjVolOCue9ashlS4EB5IECdSR2TItnAIiIwimx839\n\
-LdUdRudafMu5T5Xma182OC0/u/xRlEm+tvKGGmfFcN0piqVl8OrSPBgIlb+1IKJE\n\
-m/XriWr/Cq4h/JfB7NTsezVslgkBaoU=\n\
------END CERTIFICATE-----\n";
-
 enum {
     MODEM_CATM = 1,
     MODEM_NB_IOT,
@@ -88,25 +63,12 @@ const char server[]   = "io.adafruit.com";
 const int  port       = 8883;
 char buffer[1024] = {0};
 
-// To create a device : https://cayenne.mydevices.com/cayenne/dashboard
-//  1. Add new...
-//  2. Device/Widget
-//  3. Bring Your Own Thing
-//  4. Copy the <MQTT USERNAME> <MQTT PASSWORD> <CLIENT ID> field to the bottom for replacement
 char username[] = "ie714410";
-char password[] = "aio_YMqd77m5MZo3pofIwwTt43lUNkEY";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
+char password[] = "aio_ggfu01AL4Tnofz7I1Pz7Gv0xFLLy";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
 char topic_alarm[] = "set-alarm";
 char topic_soil_humidity[] = "soil-humidity";
-// To create a widget
-//  1. Add new...
-//  2. Device/Widget
-//  3. Custom Widgets
-//  4. Value
-//  5. Fill in the name and select the newly created equipment
-//  6. Channel is filled as 0
-//  7.  Choose ICON
-//  8. Add Widget
+
 int data_channel = 0;
 
 int calculated_moisture, sensed_moisture;
@@ -120,65 +82,6 @@ bool isConnect()
         return res.toInt();
     }
     return false;
-}
-
-
-void writeCaFiles(int index, const char *filename, const char *data,
-                  size_t lenght)
-{
-    modem.sendAT("+CFSTERM");
-    modem.waitResponse();
-
-
-    modem.sendAT("+CFSINIT");
-    if (modem.waitResponse() != 1) {
-        Serial.println("INITFS FAILED");
-        return;
-    }
-    // AT+CFSWFILE=<index>,<filename>,<mode>,<filesize>,<input time>
-    // <index>
-    //      Directory of AP filesystem:
-    //      0 "/custapp/" 1 "/fota/" 2 "/datatx/" 3 "/customer/"
-    // <mode>
-    //      0 If the file already existed, write the data at the beginning of the
-    //      file. 1 If the file already existed, add the data at the end o
-    // <file size>
-    //      File size should be less than 10240 bytes. <input time> Millisecond,
-    //      should send file during this period or you can’t send file when
-    //      timeout. The value should be less
-    // <input time> Millisecond, should send file during this period or you can’t
-    // send file when timeout. The value should be less than 10000 ms.
-
-    size_t payloadLenght = lenght;
-    size_t totalSize     = payloadLenght;
-    size_t alardyWrite   = 0;
-
-    while (totalSize > 0) {
-        size_t writeSize = totalSize > 10000 ? 10000 : totalSize;
-
-        modem.sendAT("+CFSWFILE=", index, ",", "\"", filename, "\"", ",",
-                     !(totalSize == payloadLenght), ",", writeSize, ",", 10000);
-        modem.waitResponse(30000UL, "DOWNLOAD");
-REWRITE:
-        modem.stream.write(data + alardyWrite, writeSize);
-        if (modem.waitResponse(30000UL) == 1) {
-            alardyWrite += writeSize;
-            totalSize -= writeSize;
-            Serial.printf("Writing:%d overage:%d\n", writeSize, totalSize);
-        } else {
-            Serial.println("Write failed!");
-            delay(1000);
-            goto REWRITE;
-        }
-    }
-
-    Serial.println("Wirte done!!!");
-
-    modem.sendAT("+CFSTERM");
-    if (modem.waitResponse() != 1) {
-        Serial.println("CFSTERM FAILED");
-        return;
-    }
 }
 
 void connect_mqtt()
@@ -219,7 +122,20 @@ void connect_mqtt()
 
     Serial.println("MQTT Client connected!");
 }
-
+void printResponse() {
+    while (SerialAT.available()) {
+      Serial.write(SerialAT.read());
+    }
+    Serial.println();
+  }
+  
+  void sendATCommand(const char* cmd, const char* expected = "OK", uint32_t timeout = 1000) {
+    Serial.print("AT Command: ");
+    Serial.println(cmd);
+    SerialAT.println(cmd);
+    delay(100);
+    printResponse();
+  }
 void setup()
 {
 
@@ -367,10 +283,6 @@ void setup()
     modem.waitResponse(30000);
 
 
-    /*********************************
-     * step 6 : import  ca
-     ***********************************/
-    //writeCaFiles(3, "server-ca.crt", rootCA, strlen(rootCA));
 
     /*********************************
     * step 6 : setup MQTT Client
@@ -384,16 +296,15 @@ void setup()
     connect_mqtt();
 
 
-    modem.sendAT("+SMSUB=?");
-    Serial.println(modem.waitResponse(10000));
+    sendATCommand("+SMSUB?");
 // Subscribe to MQTT topic
     snprintf(buffer, 1024, "+SMSUB=\"%s/feeds/%s\",1", username, topic_alarm);
-    modem.sendAT(buffer);
-    Serial.println(modem.waitResponse(10000));
+    sendATCommand(buffer);
+    //Serial.println(modem.waitResponse(10000));
     //if (modem.waitResponse() != 1) {
     //    return;
     //}
-
+    sendATCommand("+SMSUB?");
     Serial.print("MQTT Subscribe topic : ");
     Serial.println(buffer);    
     // random seed data
@@ -407,27 +318,6 @@ void loop()
         Serial.println("Connecting...");
         connect_mqtt();
     }
-    
-    sensed_moisture = analogRead(moisture_sensor_pin);
-    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
-    String payload = String(calculated_moisture)+ "\r\n";
-    snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
-    modem.sendAT(buffer);
-    if (modem.waitResponse(">") == 1) {
-        modem.stream.write(payload.c_str(), payload.length());
-        Serial.print("Try publish payload: ");
-        Serial.println(payload);
-
-        if (modem.waitResponse(3000)) {
-            Serial.println("Send Packet success!");
-        } else {
-            Serial.println("Send Packet failed!");
-        }
-    }
-    //Serial.println(buffer);
-    //Serial.println(payload);
-    Serial.println("Moisture level: "+String(calculated_moisture)+"%");
-
     //Check if subscription has messages
     Serial.println("Checking for messages:");
     delay(2000);
@@ -466,6 +356,28 @@ void loop()
     {
         Serial.println("subscription has no messages");
     }
+
+    sensed_moisture = analogRead(moisture_sensor_pin);
+    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
+    String payload = String(calculated_moisture)+ "\r\n";
+    snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
+    modem.sendAT(buffer);
+    if (modem.waitResponse(">") == 1) {
+        modem.stream.write(payload.c_str(), payload.length());
+        Serial.print("Try publish payload: ");
+        Serial.println(payload);
+
+        if (modem.waitResponse(3000)) {
+            Serial.println("Send Packet success!");
+        } else {
+            Serial.println("Send Packet failed!");
+        }
+    }
+    //Serial.println(buffer);
+    //Serial.println(payload);
+    Serial.println("Moisture level: "+String(calculated_moisture)+"%");
+
+    
 /*
         // v1/username/things/clientID/response
         snprintf(buffer, 1024, "+SMPUB=\"v1/%s/things/%s/response\",%d,1,1", username, clientID, payload.length());
