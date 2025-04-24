@@ -335,7 +335,7 @@ void loop()
         }
 
         // v1/username/things/clientID/response
-        snprintf(buffer, 1024, "+SMPUB=\"v1/%s/things/%s/response\",%d,1,1", username, clientID, payload.length());
+        snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/gas\",%d,1,1", payload.length());
         modem.sendAT(buffer);
         if (modem.waitResponse(">") == 1) {
             modem.stream.write(payload.c_str(), payload.length());
