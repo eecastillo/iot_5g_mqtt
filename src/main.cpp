@@ -64,15 +64,15 @@ const int  port       = 8883;
 char buffer[1024] = {0};
 
 char username[] = "ie714410";
-char password[] = "aio_ggfu01AL4Tnofz7I1Pz7Gv0xFLLy";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
+char password[] = "aio_WSlF17KC643tlUBoVGUKI8lrPeyM";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
 char clientID[] = "ESP32";
 char topic_alarm[] = "set-alarm";
-char topic_soil_humidity[] = "soil-humidity";
+char topic_soil_humidity[] = "gas";
 
 int data_channel = 0;
 
-int calculated_moisture, sensed_moisture;
-int moisture_sensor_pin = 1;
+float calculated_moisture, sensed_moisture;
+float moisture_sensor_pin = 1;
 
 bool isConnect()
 {
@@ -357,7 +357,9 @@ void loop()
         Serial.println("subscription has no messages");
     }
 
-    sensed_moisture = analogRead(moisture_sensor_pin);
+    sensed_moisture = 2000;//analogRead(moisture_sensor_pin);
+    Serial.println(sensed_moisture/4095);
+
     calculated_moisture = (100 - ((sensed_moisture/4095)*100));
     String payload = String(calculated_moisture)+ "\r\n";
     snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
