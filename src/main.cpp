@@ -64,7 +64,7 @@ const int  port       = 8883;
 char buffer[1024] = {0};
 
 char username[] = "ie714410";
-char password[] = "aio_WSlF17KC643tlUBoVGUKI8lrPeyM";
+char password[] = "aio_zhdY23a5l0icACN6e0lT98RGiOg1";
 char clientID[] = "drake";
 
 
@@ -79,7 +79,49 @@ bool isConnect()
     return false;
 }
 
+void connect_mqtt(){
+    // If it is already connected, disconnect it first
+    modem.sendAT("+SMDISC");
+    modem.waitResponse();
 
+
+    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    int8_t ret;
+    do {
+
+        modem.sendAT("+SMCONN");
+        ret = modem.waitResponse(30000);
+        if (ret != 1) {
+            Serial.println("Connect failed, retry connect ..."); delay(1000);
+        }
+
+    } while (ret != 1);
+
+
+    Serial.println("MQTT Client connected!");
+}
 void setup()
 {
 
@@ -240,47 +282,7 @@ void setup()
     * step 6 : setup MQTT Client
     ***********************************/
 
-    // If it is already connected, disconnect it first
-    modem.sendAT("+SMDISC");
-    modem.waitResponse();
-
-
-    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    int8_t ret;
-    do {
-
-        modem.sendAT("+SMCONN");
-        ret = modem.waitResponse(30000);
-        if (ret != 1) {
-            Serial.println("Connect failed, retry connect ..."); delay(1000);
-        }
-
-    } while (ret != 1);
-
-
-    Serial.println("MQTT Client connected!");
+    connect_mqtt();
 
 
     /*********************************
@@ -304,7 +306,8 @@ void loop()
         Serial.println("MQTT Client disconnect!"); delay(1000);
         return ;
     }
-
+    delay(1000);
+    Serial.println("Checking for messages:");
     // Waiting for subscribed messages
     if (modem.waitResponse("+SMSUB: ") == 1) {
         String result =  modem.stream.readStringUntil('\r');
