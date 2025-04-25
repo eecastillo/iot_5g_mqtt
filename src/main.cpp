@@ -64,10 +64,10 @@ const int  port       = 8883;
 char buffer[1024] = {0};
 
 char username[] = "ie714410";
-char password[] = "aio_WSlF17KC643tlUBoVGUKI8lrPeyM";//"aio_XWlF91lrgcTDWWQWodZqT2hbrfst";
+char password[] = "aio_GFru70LYEGEdabWw3UvyZGVrQrgc";
 char clientID[] = "ESP32";
 char topic_alarm[] = "set-alarm";
-char topic_soil_humidity[] = "gas";
+char topic_soil_humidity[] = "soil-humidity";
 
 int data_channel = 0;
 
@@ -86,6 +86,10 @@ bool isConnect()
 
 void connect_mqtt()
 {
+    // If it is already connected, disconnect it first
+    modem.sendAT("+SMDISC");
+    modem.waitResponse();
+    
     snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
     modem.sendAT(buffer);
     if (modem.waitResponse() != 1) {
@@ -288,81 +292,78 @@ void setup()
     * step 6 : setup MQTT Client
     ***********************************/
 
-    // If it is already connected, disconnect it first
-    modem.sendAT("+SMDISC");
-    modem.waitResponse();
 
 
     connect_mqtt();
 
 
-    sendATCommand("+SMSUB?");
+    //sendATCommand("+SMSUB?");
 // Subscribe to MQTT topic
-    snprintf(buffer, 1024, "+SMSUB=\"%s/feeds/%s\",1", username, topic_alarm);
-    sendATCommand(buffer);
+    //snprintf(buffer, 1024, "+SMSUB=\"%s/feeds/%s\",1", username, topic_alarm);
+    //sendATCommand(buffer);
     //Serial.println(modem.waitResponse(10000));
     //if (modem.waitResponse() != 1) {
     //    return;
     //}
-    sendATCommand("+SMSUB?");
-    Serial.print("MQTT Subscribe topic : ");
-    Serial.println(buffer);    
+    //sendATCommand("+SMSUB?");
+   // Serial.print("MQTT Subscribe topic : ");
+   // Serial.println(buffer);    
     // random seed data
     //randomSeed(esp_random());
 }
 
 void loop()
 {
+    //delay(2000);
     if (!isConnect()) {
         Serial.println("MQTT Client disconnect!"); delay(1000);
         Serial.println("Connecting...");
         connect_mqtt();
     }
-    //Check if subscription has messages
-    Serial.println("Checking for messages:");
-    delay(2000);
-    if (modem.waitResponse("+SMSUB: ") == 1) {
-        String result =  modem.stream.readStringUntil('\r');
-        Serial.print("Recive payload:");
-        Serial.println(result);
-
-
-        int index = result.indexOf(",");
-        if (index < 0) {
-            Serial.println("index error !"); return;
-        }
-
-        result = result.substring(index + 1);
-        result.replace("\"", "");
-
-        //Get command value
-        char value = result[result.length() - 1];
-        //Get Sep
-        result = result.substring(0, result.length() - 2);
-
-        String payload = "ok,";
-        payload.concat(result);
-
-        if (value == '1') {
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
-            
-          //  tone(BUZZZER_PIN, NOTE_C4, 1000);
-          //  delay(1000);
-          //  noTone(BUZZZER_PIN);
-        } else {
-            PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
-        }
-    }else
-    {
-        Serial.println("subscription has no messages");
-    }
-
-    sensed_moisture = 2000;//analogRead(moisture_sensor_pin);
+  //Check if subscription has messages
+  //Serial.println("Checking for messages:");
+  
+  //if (modem.waitResponse("+SMSUB: ") == 1) {
+  //    String result =  modem.stream.readStringUntil('\r');
+  //    Serial.print("Recive payload:");
+  //    Serial.println(result);
+//
+//
+  //    int index = result.indexOf(",");
+  //    if (index < 0) {
+  //        Serial.println("index error !"); return;
+  //    }
+//
+  //    result = result.substring(index + 1);
+  //    result.replace("\"", "");
+//
+  //    //Get command value
+  //    char value = result[result.length() - 1];
+  //    //Get Sep
+  //    result = result.substring(0, result.length() - 2);
+//
+  //    String payload = "ok,";
+  //    payload.concat(result);
+//
+  //    if (value == '1') {
+  //        PMU.setChargingLedMode(XPOWERS_CHG_LED_ON);
+  //        
+  //      //  tone(BUZZZER_PIN, NOTE_C4, 1000);
+  //      //  delay(1000);
+  //      //  noTone(BUZZZER_PIN);
+  //    } else {
+  //        PMU.setChargingLedMode(XPOWERS_CHG_LED_OFF);
+  //    }
+  //}else
+  //{
+  //    Serial.println("subscription has no messages");
+  //}
+    sensed_moisture = 1000;//analogRead(moisture_sensor_pin);
     Serial.println(sensed_moisture/4095);
 
     calculated_moisture = (100 - ((sensed_moisture/4095)*100));
     String payload = String(calculated_moisture)+ "\r\n";
-    snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
+    snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/soil-humidity\",%d,1,1", payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
