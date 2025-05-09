@@ -54,9 +54,9 @@ const int AUTOMATIC_NETWORK = 2;
 #define randMin 18
 
 // Your GPRS credentials, if any
-const char apn[] = "internet.itelcel.com";//"emnify";
-const char gprsUser[] = "webgprs";//""; // User
-const char gprsPass[] = "webgprs2002";//""; // Password
+const char apn[] = "emnify";//"internet.itelcel.com";//"emnify";
+const char gprsUser[] = "";//"webgprs";//""; // User
+const char gprsPass[] = "";//"webgprs2002";//""; // Password
 
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
@@ -64,7 +64,7 @@ const int  port       = 8883;
 char buffer[1024] = {0};
 
 char username[] = "ie714410";
-char password[] = "";
+char password[] = "aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8";
 char clientID[] = "ESP32";
 char topic_alarm[] = "set-alarm";
 char topic_soil_humidity[] = "soil-humidity";
@@ -137,6 +137,21 @@ void printResponse() {
     delay(100);
     printResponse();
   }
+
+void mqtt_subscribe(){
+            /*********************************
+        * step 7 : Subscribe topic
+        ************************************/
+       snprintf(buffer, 1024, "+SMSUB=\"ie714410/feeds/set-alarm\",1");
+       modem.sendAT(buffer);
+       if (modem.waitResponse() != 1) {
+           Serial.println("Couldn't subscribe to topic");
+           //delay(1000);
+           return;
+       }
+       Serial.print("MQTT Subscribe topic : ");
+       Serial.println(buffer);
+}
 void setup()
 {
 
@@ -209,7 +224,11 @@ void setup()
         return ;
     }
 
-
+    //// Disable RF
+    modem.sendAT("+CFUN=0");
+    if (modem.waitResponse(20000UL) != 1) {
+        Serial.println("Disable RF Failed!");
+    }
     /*********************************
      * step 4 : Set the network mode to NB-IOT
     ***********************************/
@@ -224,6 +243,25 @@ void setup()
 
     Serial.printf("getNetworkMode:%u getPreferredMode:%u\n", mode, pre);
 
+    // Set the APN manually. Some operators need to set APN first when registering the network.
+    modem.sendAT("+CGDCONT=1,\"IP\",\"", apn, "\"");
+    if (modem.waitResponse() != 1) {
+        Serial.println("Set operators apn Failed!");
+        return;
+    }
+
+    //!! Set the APN manually. Some operators need to set APN first when registering the network.
+    modem.sendAT("+CNCFG=0,1,\"", apn, "\"");
+    if (modem.waitResponse() != 1) {
+        Serial.println("Config apn Failed!");
+        return;
+    }
+
+    // Enable RF
+    modem.sendAT("+CFUN=1");
+    if (modem.waitResponse(20000UL) != 1) {
+        Serial.println("Enable RF Failed!");
+    }
 
     /*********************************
     * step 5 : Wait for the network registration to succeed
@@ -266,13 +304,13 @@ void setup()
     bool res = modem.isGprsConnected();
     if (!res) {
         modem.sendAT("+CNACT=0,1");
-        //if (modem.waitResponse() != 1) {
-        //    Serial.println("Activate network bearer Failed!");
-         //   return;
-        //}
-         if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
-             return ;
-         }
+        if (modem.waitResponse() != 1) {
+            Serial.println("Activate network bearer Failed!");
+            return;
+        }
+        // if (!modem.gprsConnect(apn, gprsUser, gprsPass)) {
+        //     return ;
+        // }
     }
 
     Serial.print("GPRS status:");
@@ -294,6 +332,7 @@ void setup()
     modem.waitResponse();
 
     connect_mqtt();
+    //mqtt_subscribe();
 
 }
 
@@ -303,9 +342,10 @@ void loop()
         Serial.println("MQTT Client disconnect!"); delay(1000);
         Serial.println("Connecting...");
         connect_mqtt();
+        //mqtt_subscribe();
     }
 
-    sensed_moisture = 1000;//analogRead(moisture_sensor_pin);
+    sensed_moisture = analogRead(moisture_sensor_pin);
     Serial.println(sensed_moisture/4095);
 
     calculated_moisture = (100 - ((sensed_moisture/4095)*100));
@@ -326,7 +366,9 @@ void loop()
     //Serial.println(buffer);
     //Serial.println(payload);
     Serial.println("Moisture level: "+String(calculated_moisture)+"%");
-
+    
+    Serial.println("Restarting...");
+    Serial.println();
     //Sleep and wakeup block
-    delay(60000);
+    delay(3000);
 }
