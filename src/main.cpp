@@ -1,10 +1,5 @@
 /**
- * @file      ModemMqttPulishExample.ino
- * @author    Lewis He (lewishe@outlook.com)
- * @license   MIT
- * @copyright Copyright (c) 2022  Shenzhen Xin Yuan Electronic Technology Co., Ltd
- * @date      2022-09-16
- *
+The following code is a modification based on the documentation provided in file ModemMqttPulishExample.ino by Lewis He (lewishe@outlook.com) under the MIT license and Copyright (c) 2022  Shenzhen Xin Yuan Electronic Technology Co., Ltd
  */
 #include <Arduino.h>
 #define XPOWERS_CHIP_AXP2101
