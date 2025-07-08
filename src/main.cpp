@@ -11,14 +11,6 @@
 #include "XPowersLib.h"
 #include "utilities.h"
 
-
-//Pitches for buzzer implementation
-#include "pitches.h" 
-#define BUZZER_PIN 18
-int melody[] = {
-  NOTE_C4, NOTE_G3, NOTE_G3, NOTE_A3, NOTE_G3, 0, NOTE_B3, NOTE_C4
-};
-
 XPowersPMU  PMU;
 
 // See all AT commands, if wanted
@@ -66,7 +58,6 @@ char buffer[1024] = {0};
 char username[] = "ie714410";
 char password[] = "aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8";
 char clientID[] = "ESP32";
-char topic_alarm[] = "set-alarm";
 char topic_soil_humidity[] = "soil-humidity";
 
 int data_channel = 0;
@@ -138,20 +129,7 @@ void printResponse() {
     printResponse();
   }
 
-void mqtt_subscribe(){
-            /*********************************
-        * step 7 : Subscribe topic
-        ************************************/
-       snprintf(buffer, 1024, "+SMSUB=\"ie714410/feeds/set-alarm\",1");
-       modem.sendAT(buffer);
-       if (modem.waitResponse() != 1) {
-           Serial.println("Couldn't subscribe to topic");
-           //delay(1000);
-           return;
-       }
-       Serial.print("MQTT Subscribe topic : ");
-       Serial.println(buffer);
-}
+
 void setup()
 {
 
@@ -263,26 +241,7 @@ void setup()
         Serial.println("Enable RF Failed!");
     }
 
-    /*********************************
-    * step 5 : Wait for the network registration to succeed
-    ***********************************/
-   //check with and without this
-   /* 
-   modem.sendAT("+CNCFG=0,1,\"emnify\"");
-    if (modem.waitResponse() != 1) {
-        Serial.println("Set operators apn Failed!");
-        return;
-    }
-    modem.sendAT("+CNACT=0,1");
-    if (modem.waitResponse() != 1) {
-        Serial.println("Set operators cnact Failed!");
-        return;
-    }
-    modem.sendAT("+CAOPEN=0,0,\"TCP\",\"10.189.169.49\",443");
-    if (modem.waitResponse() != 1) {
-        Serial.println("Set operators caopen Failed!");
-        return;
-    }*/
+
     SIM70xxRegStatus s;
     do {
         s = modem.getRegistrationStatus();
@@ -332,7 +291,6 @@ void setup()
     modem.waitResponse();
 
     connect_mqtt();
-    //mqtt_subscribe();
 
 }
 
@@ -342,7 +300,6 @@ void loop()
         Serial.println("MQTT Client disconnect!"); delay(1000);
         Serial.println("Connecting...");
         connect_mqtt();
-        //mqtt_subscribe();
     }
 
     sensed_moisture = analogRead(moisture_sensor_pin);
@@ -363,8 +320,6 @@ void loop()
             Serial.println("Send Packet failed!");
         }
     }
-    //Serial.println(buffer);
-    //Serial.println(payload);
     Serial.println("Moisture level: "+String(calculated_moisture)+"%");
     
     Serial.println("Restarting...");
