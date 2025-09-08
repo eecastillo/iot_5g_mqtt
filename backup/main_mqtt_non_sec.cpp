@@ -1,5 +1,10 @@
 /**
-The following code is a modification based on the documentation provided in file ModemMqttPulishExample.ino by Lewis He (lewishe@outlook.com) under the MIT license and Copyright (c) 2022  Shenzhen Xin Yuan Electronic Technology Co., Ltd
+ * @file      ModemMqttPulishExample.ino
+ * @author    Lewis He (lewishe@outlook.com)
+ * @license   MIT
+ * @copyright Copyright (c) 2022  Shenzhen Xin Yuan Electronic Technology Co., Ltd
+ * @date      2022-09-16
+ *
  */
 #include <Arduino.h>
 #define XPOWERS_CHIP_AXP2101
@@ -35,30 +40,39 @@ enum {
     MODEM_CATM_NBIOT,
 };
 
-const int AUTOMATIC_NETWORK = 2;
-
 #define randMax 35
 #define randMin 18
 
 // Your GPRS credentials, if any
-const char apn[] = "emnify";//"internet.itelcel.com";//"emnify";
-const char gprsUser[] = "";//"webgprs";//""; // User
-const char gprsPass[] = "";//"webgprs2002";//""; // Password
+const char apn[] = "internet.itelcel.com";
+const char gprsUser[] = "webgprs"; // User
+const char gprsPass[] = "webgprs2002"; // Password
 
 // cayenne server address and port
 const char server[]   = "io.adafruit.com";
-const int  port       = 8883;
+const int  port       = 1883;
 char buffer[1024] = {0};
 
+// To create a device : https://cayenne.mydevices.com/cayenne/dashboard
+//  1. Add new...
+//  2. Device/Widget
+//  3. Bring Your Own Thing
+//  4. Copy the <MQTT USERNAME> <MQTT PASSWORD> <CLIENT ID> field to the bottom for replacement
 char username[] = "ie714410";
-char password[] = "aio_aLwI06Dmz09Q9D1IPzy8ioq7RgM8";
+char password[] = "aio_JiDj44A9Z1qKNJ6sJLfAEfCRfB3n";
 char clientID[] = "ESP32";
-char topic_soil_humidity[] = "soil-humidity";
 
+// To create a widget
+//  1. Add new...
+//  2. Device/Widget
+//  3. Custom Widgets
+//  4. Value
+//  5. Fill in the name and select the newly created equipment
+//  6. Channel is filled as 0
+//  7.  Choose ICON
+//  8. Add Widget
 int data_channel = 0;
 
-float calculated_moisture, sensed_moisture;
-float moisture_sensor_pin = 1;
 
 bool isConnect()
 {
@@ -69,60 +83,6 @@ bool isConnect()
     }
     return false;
 }
-
-void connect_mqtt()
-{
-    
-    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
-    modem.sendAT(buffer);
-    if (modem.waitResponse() != 1) {
-        return;
-    }
-
-    int8_t ret;
-    do {
-
-        modem.sendAT("+SMCONN");
-        ret = modem.waitResponse(30000);
-        if (ret != 1) {
-            Serial.println("Connect failed, retry connect ..."); delay(1000);
-        }
-
-    } while (ret != 1);
-
-    Serial.println("MQTT Client connected!");
-}
-void printResponse() {
-    while (SerialAT.available()) {
-      Serial.write(SerialAT.read());
-    }
-    Serial.println();
-  }
-  
-  void sendATCommand(const char* cmd, const char* expected = "OK", uint32_t timeout = 1000) {
-    Serial.print("AT Command: ");
-    Serial.println(cmd);
-    SerialAT.println(cmd);
-    delay(100);
-    printResponse();
-  }
 
 
 void setup()
@@ -197,18 +157,14 @@ void setup()
         return ;
     }
 
-    //// Disable RF
-    modem.sendAT("+CFUN=0");
-    if (modem.waitResponse(20000UL) != 1) {
-        Serial.println("Disable RF Failed!");
-    }
+
     /*********************************
      * step 4 : Set the network mode to NB-IOT
     ***********************************/
 
-    modem.setNetworkMode(AUTOMATIC_NETWORK);    //automatic detection AUTOMATIC_NETWORK=2
+    modem.setNetworkMode(2);    //use automatic
 
-    modem.setPreferredMode(MODEM_CATM);       // NB_IOT(2) as preferred mode
+    modem.setPreferredMode(MODEM_CATM);
 
     uint8_t pre = modem.getPreferredMode();
 
@@ -216,32 +172,14 @@ void setup()
 
     Serial.printf("getNetworkMode:%u getPreferredMode:%u\n", mode, pre);
 
-    // Set the APN manually. Some operators need to set APN first when registering the network.
-    modem.sendAT("+CGDCONT=1,\"IP\",\"", apn, "\"");
-    if (modem.waitResponse() != 1) {
-        Serial.println("Set operators apn Failed!");
-        return;
-    }
 
-    //!! Set the APN manually. Some operators need to set APN first when registering the network.
-    modem.sendAT("+CNCFG=0,1,\"", apn, "\"");
-    if (modem.waitResponse() != 1) {
-        Serial.println("Config apn Failed!");
-        return;
-    }
-
-    // Enable RF
-    modem.sendAT("+CFUN=1");
-    if (modem.waitResponse(20000UL) != 1) {
-        Serial.println("Enable RF Failed!");
-    }
-
-
+    /*********************************
+    * step 5 : Wait for the network registration to succeed
+    ***********************************/
     SIM70xxRegStatus s;
     do {
         s = modem.getRegistrationStatus();
         if (s != REG_OK_HOME && s != REG_OK_ROAMING) {
-            Serial.printf("Response: %u", s);
             Serial.print(".");
             delay(1000);
         }
@@ -270,13 +208,6 @@ void setup()
     Serial.print("GPRS status:");
     Serial.println(res ? "connected" : "not connected");
 
-
-    // Before connecting, you need to confirm that the time has been synchronized.
-    modem.sendAT("+CCLK?");
-    modem.waitResponse(30000);
-
-
-
     /*********************************
     * step 6 : setup MQTT Client
     ***********************************/
@@ -285,24 +216,63 @@ void setup()
     modem.sendAT("+SMDISC");
     modem.waitResponse();
 
-    connect_mqtt();
 
+    snprintf(buffer, 1024, "+SMCONF=\"URL\",\"%s\",%d", server, port);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+    snprintf(buffer, 1024, "+SMCONF=\"USERNAME\",\"%s\"", username);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"PASSWORD\",\"%s\"", password);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    snprintf(buffer, 1024, "+SMCONF=\"CLIENTID\",\"%s\"", clientID);
+    modem.sendAT(buffer);
+    if (modem.waitResponse() != 1) {
+        return;
+    }
+
+    int8_t ret;
+    do {
+
+        modem.sendAT("+SMCONN");
+        ret = modem.waitResponse(30000);
+        if (ret != 1) {
+            Serial.println("Connect failed, retry connect ..."); delay(1000);
+        }
+
+    } while (ret != 1);
+
+    Serial.println("MQTT Client connected!");
+
+    // random seed data
+    randomSeed(esp_random());
 }
 
 void loop()
 {
     if (!isConnect()) {
         Serial.println("MQTT Client disconnect!"); delay(1000);
-        Serial.println("Connecting...");
-        connect_mqtt();
+        return ;
     }
 
-    sensed_moisture = analogRead(moisture_sensor_pin);
-    Serial.println(sensed_moisture/4095);
+    Serial.println();
+    // Publish fake temperature data
+    String payload = "42\r\n";//"temp,c=";
+    //int temp =  rand() % (randMax - randMin) + randMin;
+    //payload.concat(temp);
+    //payload.concat("\r\n");
 
-    calculated_moisture = (100 - ((sensed_moisture/4095)*100));
-    String payload = String(calculated_moisture)+ "\r\n";
-    snprintf(buffer, 1024, "+SMPUB=\"%s/feeds/%s\",%d,1,1", username, topic_soil_humidity, payload.length());
+    // AT+SMPUB=<topic>,<content length>,<qos>,<retain><CR>message is enteredQuit edit mode if messagelength equals to <contentlength>
+    snprintf(buffer, 1024, "+SMPUB=\"ie714410/feeds/nivel_gas\",%d,1,1", payload.length());
     modem.sendAT(buffer);
     if (modem.waitResponse(">") == 1) {
         modem.stream.write(payload.c_str(), payload.length());
@@ -315,10 +285,6 @@ void loop()
             Serial.println("Send Packet failed!");
         }
     }
-    Serial.println("Moisture level: "+String(calculated_moisture)+"%");
-    
-    Serial.println("Restarting...");
-    Serial.println();
-    //Sleep and wakeup block
-    delay(3000);
+
+    delay(60000);
 }
